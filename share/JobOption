@@ -1,0 +1,16 @@
+#! /usr/bin/python
+
+import DMPSW
+import libDmpSvcDatabase as Database
+
+gDatabaseSvc = Database.DmpSvcDatabase.GetInstance()
+gDatabaseSvc.Set("Package","Calibration")
+gDatabaseSvc.Set("Pedestal/Read","tmpPed")
+#database.Set("Update","tmpPed")
+DMPSW.SvcMgr.Append(gDatabaseSvc)
+#gDatabaseSvc.Initialize()
+#gDatabaseSvc.Finalize()
+DMPSW.Core.Initialize()
+DMPSW.Core.Run()
+DMPSW.Core.Finalize()
+
