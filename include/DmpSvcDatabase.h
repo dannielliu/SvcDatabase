@@ -4,9 +4,13 @@
 #include "DmpVSvc.h"
 //#include <boost/filesystem.hpp>     // path 
 #include <fstream>
+#include <vector>
 //using std::map;
 //using std::string;
 using namespace std;
+struct valueset{
+  vector<double> value;
+};
 
 class DmpSvcDatabase : public DmpVSvc{
 /*
@@ -42,8 +46,8 @@ private:
   string fCurrentWork;
 	fstream fPedFile;
 	fstream fMipsFile;
-	map<int,double> PedMap;
-	map<int,double> MipsMap;
+	map<int,valueset> ParMap;
+	//map<int,valueset> MipsMap;
 
 public:
   template<typename type1>
@@ -60,19 +64,35 @@ public:
 	  } 
     return true;
   } 
+  template<typename type1>
+  bool AppendData(int position, type1 value1, type1 value2,string pkgType=""){
+    if (fCurrentWork == "Ped"||pkgType=="Ped"){ 
+	    fPedFile<<position<<"\t"<<value1<<"\t"<<value2<<std::endl;
+	  }
+	  else if (fCurrentWork == "Mips"||pkgType=="Mips"){
+	    fMipsFile<<position<<"\t"<<value1<<"\t"<<value2<<std::endl;
+	  } 
+	  else{ 
+	    DmpLogError<<"I don't know where to save the data."<<DmpLogEndl;
+		  return false;
+	  } 
+    return true;
+  }
 
-	double GetData(int position,string pkgType=""){
+	double GetData(int position,int id=0,string pkgType=""){
     double result=-1;
-		if(pkgType=="Ped"||fCurrentWork=="Ped"){
-		  return PedMap[position];
-		}
-		if(pkgType=="Mips"||fCurrentWork=="Mips"){
-		  return MipsMap[position];
-		}
+		//if(pkgType=="Ped"||fCurrentWork=="Ped"){
+		  return ParMap[position].value.at(id);
+		//}
+		//if(pkgType=="Mips"||fCurrentWork=="Mips"){
+		  //return ParsMap[position].value.at(i);
+		//}
 
 	  return result;
   } 
-  
+
+  bool LoadPar(fstream &pkg);
+
 };
 
 extern DmpSvcDatabase *gDatabaseSvc;

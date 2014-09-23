@@ -15,8 +15,9 @@ DmpSvcDatabase::DmpSvcDatabase()
  fPedFile(0),
  fMipsFile(0)
 {
-  PedMap.clear();
-	MipsMap.clear();
+  ParMap.clear();
+  //PedMap.clear();
+	//MipsMap.clear();
   //fDatabasePath += "/Database";
   OptMap.insert(make_pair("Pedestal/Write",  0));
 	OptMap.insert(make_pair("Pedestal/Read",   1));
@@ -43,26 +44,10 @@ bool DmpSvcDatabase::Initialize(){
   if(fCurrentWork=="Ped"){
     fPedBase = fDatabasePath+'/'+fPackage +'/'+fSubDetector+'/' + fPedBase;
 	  fPedFile.open(fPedBase,fModeMap["Ped"]);
-	  string tmpstr;
-	  vector<string> strings;
-	  int tmpPos;
-	  double tmpValue;
 	  if (fPedFile){
 	    DmpLogInfo<<" Open "<<fPedBase<<" Successful."<<DmpLogEndl;
 		  if (fModeMap["Ped"]==ios::in){
-				DmpLogInfo<<"Reading ..."<<DmpLogEndl;
-			  getline(fPedFile,tmpstr);                                 //read out by line
-		    while(!fPedFile.eof()){
-				  //DmpLogInfo<<"Reading ..."<<DmpLogEndl;
-			    //getline(fPedFile,tmpstr);                                 //read out by line
-				  boost::split(strings,tmpstr,boost::is_any_of("\t"));      //split by \t
-		      //fPedFile>>tmpPos>>tmpValue;
-				  tmpPos=atoi(strings.at(0).c_str());                       //convert string to int, first is position
-				  tmpValue=atof(strings.at(1).c_str());
-					std::cout<<tmpPos<<' '<<tmpValue<<std::endl;
-          PedMap.insert(make_pair(tmpPos,tmpValue));
-			    getline(fPedFile,tmpstr);                                 //read out by line
-			  }
+			  LoadPar(fPedFile);
 		  }
 	  }
 	  else{  
@@ -74,26 +59,10 @@ bool DmpSvcDatabase::Initialize(){
 	if(fCurrentWork=="Mips"){
 	  fMipsBase = fDatabasePath+'/'+fPackage +'/'+fSubDetector+'/' + fMipsBase;
   	fMipsFile.open(fMipsBase,fModeMap["Mips"]);
- 	  string tmpstr;
-	  vector<string> strings;
-	  int tmpPos;
-	  double tmpValue;
 	  if (fMipsFile){
 	    DmpLogInfo<<" Open "<<fMipsBase<<" Successful."<<DmpLogEndl;
   	  if (fModeMap["Mips"]==ios::in){
-				DmpLogInfo<<"Reading ..."<<DmpLogEndl;
-			  getline(fMipsFile,tmpstr);                                 //read out by line
-		    while(!fMipsFile.eof()){
-				  //DmpLogInfo<<"Reading ..."<<DmpLogEndl;
-			    //getline(fPedFile,tmpstr);                                 //read out by line
-				  boost::split(strings,tmpstr,boost::is_any_of("\t"));      //split by \t
-		      //fPedFile>>tmpPos>>tmpValue;
-				  tmpPos=atoi(strings.at(0).c_str());                       //convert string to int, first is position
-				  tmpValue=atof(strings.at(1).c_str());
-					std::cout<<tmpPos<<' '<<tmpValue<<std::endl;
-          MipsMap.insert(make_pair(tmpPos,tmpValue));
-			    getline(fMipsFile,tmpstr);                                 //read out by line
-			  }
+			  LoadPar(fMipsFile);
 		  }
 	  }
 	  else{ 
@@ -105,13 +74,8 @@ bool DmpSvcDatabase::Initialize(){
 } 
 
 //-------------------------------------------------------------------
-//bool DmpSvcDatabase::ProcessThisEvent(){
-//  return true;
-//}
-
-//-------------------------------------------------------------------
 bool DmpSvcDatabase::Finalize(){
-  std::cout<<"fPed   "<<fPedFile.tellp()<<std::endl;
+  //std::cout<<"fPed   "<<fPedFile.tellp()<<std::endl;
   if (fPedFile){
 	  fPedFile.close();
 		DmpLogInfo<<fPedBase<<" Closed."<<DmpLogEndl;
@@ -186,28 +150,24 @@ void  DmpSvcDatabase::Set(const string &type, const string &value){
 			break;
 	}   
 }
-/*
-template<typename type1>
-bool DmpSvcDatabase::AppendData(int position, type1 value){
-  if (fCurrentWork == "Ped"){
-	  fPedFile<<position<<"\t"<<value<<std::endl;
-	}
-	else if (fCurrentWork == "Mips"){
-	  fMipsFile<<position<<"\t"<<value<<std::endl;
-	}
-	else{
-	  DmpLogError<<"I don't know where to save the data."<<DmpLogEndl;
-		return false;
-	}
-  return true;
-}
-*/
-/*
-template<typename v_type>
-v_type GetData(int position){
-  v_type result;
 
-	return result;
+bool DmpSvcDatabase::LoadPar(fstream &file){
+  string tmpstr;
+  vector<string> strings;
+  int tmpPos;
+  valueset tmpValue;
+	DmpLogInfo<<"Reading ..."<<DmpLogEndl;
+	getline(file,tmpstr);                                 //read out by line
+	while(!file.eof()){
+	  boost::split(strings,tmpstr,boost::is_any_of("\t")); //split by \t
+	  tmpPos=atoi(strings.at(0).c_str());                  //convert string to int, first is position
+	  tmpValue.value.push_back(atof(strings.at(1).c_str()));
+		if (strings.size()>1)
+		  tmpValue.value.push_back(atof(strings.at(2).c_str()));
+    ParMap.insert(make_pair(tmpPos,tmpValue));
+    getline(file,tmpstr);                               //read out by line
+  }
+	return true;
 }
-*/
+
 DmpSvcDatabase *gDatabaseSvc = DmpSvcDatabase::GetInstance();

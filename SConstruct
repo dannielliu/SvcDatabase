@@ -41,5 +41,6 @@ for tmp in os.listdir(includeDir):
 #-------------------------------------------------------------------
 # main build
 goal=env.SharedLibrary(target,Glob('./src/*.cc'))
-Default(env.InstallAs(os.environ['DMPSWWORK']+'/lib/lib'+target+".dylib",goal))
+if env['PLATFORM'] == 'darwin': #MacOS
+  Default(env.InstallAs(os.environ['DMPSWWORK']+'/lib/lib'+target+".dylib",goal))
 Default(env.InstallAs(os.environ['DMPSWWORK']+'/lib/lib'+target+".so",goal))
