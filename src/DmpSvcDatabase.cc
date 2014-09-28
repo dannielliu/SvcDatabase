@@ -6,16 +6,19 @@
 //-------------------------------------------------------------------
 DmpSvcDatabase::DmpSvcDatabase()
  :DmpVSvc("Database"),
- fPedBase("Ped"),
- fMipsBase("Mips"),
+ //fPedBase(""),  //set pedestal file name
+ //fMipsBase(""), //set mips file name
  fPackage("Calibration"),
  fSubDetector("BGO"),
  //fOpenMode(std::ios::in),
- fDatabasePath((string)getenv("DMPSWWORK")+"/Database"),
- fPedFile(0),
- fMipsFile(0)
+ fDatabasePath((string)getenv("DMPSWWORK")+"/Database")
+ //fPedFile(0),
+ //fMipsFile(0)
 {
+  fReadList.clear();
+	fWriteList.clear();
   ParMap.clear();
+	outfiles.clear();
   //PedMap.clear();
 	//MipsMap.clear();
   //fDatabasePath += "/Database";
@@ -40,14 +43,54 @@ DmpSvcDatabase::~DmpSvcDatabase(){
 //-------------------------------------------------------------------
 bool DmpSvcDatabase::Initialize(){
   // deal with pedestal data.
-	std::cout<<"Current work directory:"<< fCurrentWork <<std::endl;
-  if(fCurrentWork=="Ped"){
+	//std::cout<<"Current work directory:"<< fCurrentRead <<std::endl;
+	// read input data
+	if(fReadList.size()>0){
+	  for(map<string,string>::iterator it=fReadList.begin();it!=fReadList.end();it++){
+		  fstream datain;
+			string fullname;
+			fullname = fDatabasePath+'/'+fPackage +'/'+fSubDetector+'/' + it->second;
+			datain.open(fullname,ios::in);
+			if(datain){
+	      DmpLogInfo<<" Open "<<fullname<<" Successful."<<DmpLogEndl;
+			}
+			else{
+	      DmpLogInfo<<" Open "<<fullname<<" Failed."<<DmpLogEndl;
+			  continue;
+			}
+			LoadPar(datain,it->first);
+			datain.close();
+	    DmpLogInfo<<fullname<<" Closed."<<DmpLogEndl;
+		}
+	}
+	// create output list
+	if(fWriteList.size()>0){
+	  for(map<string,string>::iterator it=fWriteList.begin();it!=fWriteList.end();it++){
+		  fstream *dataout;
+			dataout=new fstream();
+			string fullname;
+			fullname = fDatabasePath+'/'+fPackage +'/'+fSubDetector+'/' + it->second;
+			dataout->open(fullname,fModeMap[it->first]);
+			outfiles.insert(make_pair(it->first,dataout));
+			if(dataout){
+	      DmpLogInfo<<" Open "<<fullname<<" Successful."<<DmpLogEndl;
+			}
+			else{
+	      DmpLogInfo<<" Open "<<fullname<<" Failed."<<DmpLogEndl;
+			  continue;
+			}
+		}
+	}
+	/*
+  if(fPedBase!=""){
     fPedBase = fDatabasePath+'/'+fPackage +'/'+fSubDetector+'/' + fPedBase;
 	  fPedFile.open(fPedBase,fModeMap["Ped"]);
 	  if (fPedFile){
 	    DmpLogInfo<<" Open "<<fPedBase<<" Successful."<<DmpLogEndl;
 		  if (fModeMap["Ped"]==ios::in){
-			  LoadPar(fPedFile);
+			  LoadPar(fPedFile,"Ped");
+				fPedFile.close();
+				DmpLogInfo<<fPedBase<<" Closed"<<DmpLogEndl;
 		  }
 	  }
 	  else{  
@@ -56,26 +99,35 @@ bool DmpSvcDatabase::Initialize(){
 	}
   
 	// deal with mips file
-	if(fCurrentWork=="Mips"){
+	if(fMipsBase!=""){
 	  fMipsBase = fDatabasePath+'/'+fPackage +'/'+fSubDetector+'/' + fMipsBase;
   	fMipsFile.open(fMipsBase,fModeMap["Mips"]);
 	  if (fMipsFile){
 	    DmpLogInfo<<" Open "<<fMipsBase<<" Successful."<<DmpLogEndl;
   	  if (fModeMap["Mips"]==ios::in){
-			  LoadPar(fMipsFile);
+			  LoadPar(fMipsFile,"Mips");
+				fMipsFile.close();
+				DmpLogInfo<<fMipsBase<<" Closed"<<DmpLogEndl;
 		  }
 	  }
 	  else{ 
 	    DmpLogError<<" Can not open Mips file. "<<fMipsBase<<DmpLogEndl;
 	  } 
    }
-
+*/
   return true;
 } 
 
 //-------------------------------------------------------------------
 bool DmpSvcDatabase::Finalize(){
   //std::cout<<"fPed   "<<fPedFile.tellp()<<std::endl;
+ 	if(outfiles.size()>0){
+	  for(map<string,fstream*>::iterator it=outfiles.begin();it!=outfiles.end();it++){
+		  it->second->close();
+      DmpLogInfo<<it->first<<" file has been Closed."<<DmpLogEndl;
+		}
+	}
+/*
   if (fPedFile){
 	  fPedFile.close();
 		DmpLogInfo<<fPedBase<<" Closed."<<DmpLogEndl;
@@ -84,7 +136,7 @@ bool DmpSvcDatabase::Finalize(){
 	  fMipsFile.close();
 		DmpLogInfo<<fMipsBase<<" Closed."<<DmpLogEndl;
 	 }
-
+*/
   return true;
 } 
 
@@ -95,40 +147,40 @@ void  DmpSvcDatabase::Set(const string &type, const string &value){
 		for (map<string,short>::iterator anOpt= OptMap.begin();anOpt!=OptMap.end();anOpt++){
 		  DmpLogInfo<<anOpt->first<<DmpLogEndl;
 		} 
-		throw;
+		//throw;
 	}
-	
+
 	switch (OptMap[type])
   {
 	  case 0:
-		  fPedBase = value;
+		  //fPedBase = value;
 			fModeMap.insert(make_pair("Ped",ios::out));
-			fCurrentWork = "Ped";
+			fWriteList.insert(make_pair("Ped",value));
 		  break;
 		case 1:
-		  fPedBase = value;
+		  //fPedBase = value;
 			fModeMap.insert(make_pair("Ped",ios::in));
-			fCurrentWork = "Ped";
+			fReadList.insert(make_pair("Ped",value));
 		  break;
 		case 2:
-		  fPedBase = value;
+		  //fPedBase = value;
 			fModeMap.insert(make_pair("Ped",ios::app));
-			fCurrentWork = "Ped";
+			fWriteList.insert(make_pair("Ped",value));
 		  break;
 		case 3:
-		  fMipsBase = value;
+		  //fMipsBase = value;
 			fModeMap.insert(make_pair("Mips",ios::out));
-			fCurrentWork = "Mips";
+			fWriteList.insert(make_pair("Mips",value));
 		  break;
 		case 4:
-		  fMipsBase = value;
+		  //fMipsBase = value;
 			fModeMap.insert(make_pair("Mips",ios::in));
-			fCurrentWork = "Mips";
+			fReadList.insert(make_pair("Mips",value));
 		  break;
 		case 5:
-		  fMipsBase = value;
+		  //fMipsBase = value;
 			fModeMap.insert(make_pair("Mips",ios::app));
-			fCurrentWork = "Mips";
+			fWriteList.insert(make_pair("Mips",value));
 		  break;
 	  case 6:
 		  fSubDetector = "STK";
@@ -151,11 +203,15 @@ void  DmpSvcDatabase::Set(const string &type, const string &value){
 	}   
 }
 
-bool DmpSvcDatabase::LoadPar(fstream &file){
+bool DmpSvcDatabase::LoadPar(fstream &file,string pkgType){
+  if(pkgType==""){
+	  pkgType=fReadList.begin()->first;
+	}
   string tmpstr;
   vector<string> strings;
   int tmpPos;
   valueset tmpValue;
+	map<int,valueset> tmpset;
 	DmpLogInfo<<"Reading ..."<<DmpLogEndl;
 	getline(file,tmpstr);                                 //read out by line
 	while(!file.eof()){
@@ -164,10 +220,26 @@ bool DmpSvcDatabase::LoadPar(fstream &file){
 	  tmpValue.value.push_back(atof(strings.at(1).c_str()));
 		if (strings.size()>1)
 		  tmpValue.value.push_back(atof(strings.at(2).c_str()));
-    ParMap.insert(make_pair(tmpPos,tmpValue));
+    tmpset.insert(make_pair(tmpPos,tmpValue));
+		tmpValue.value.clear();
     getline(file,tmpstr);                               //read out by line
   }
+	ParMap.insert(make_pair(pkgType,tmpset));
+
 	return true;
+}
+
+void DmpSvcDatabase::ShowPar(string pkgType){
+  if(pkgType==""){
+	  pkgType=ParMap.begin()->first;;
+	}
+	  std::cout<<"parameter table:\n"<<std::endl;
+  for(std::map<int,valueset>::iterator it=ParMap[pkgType].begin();it!=ParMap[pkgType].end();it++){
+	  std::cout<<it->first<<std::endl;
+		for(int i=0;i<it->second.value.size();i++){
+		  std::cout<<'\t'<<it->second.value.at(i)<<std::endl;
+		}
+	}
 }
 
 DmpSvcDatabase *gDatabaseSvc = DmpSvcDatabase::GetInstance();

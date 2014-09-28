@@ -10,6 +10,7 @@
 using namespace std;
 struct valueset{
   vector<double> value;
+	//string type;
 };
 
 class DmpSvcDatabase : public DmpVSvc{
@@ -33,8 +34,8 @@ public:
 
 private:
   string fDatabasePath;
-  string fPedBase;
-	string fMipsBase;
+  //string fPedBase;
+	//string fMipsBase;
 	string fPackage;
 	string fSubDetector;
 	string fConnectorPathBgo;
@@ -43,55 +44,81 @@ private:
 	string fConnectorPathNud;
   map<string, std::ios_base::openmode> fModeMap;
 	//std::ios_base::openmode fOpenMode;  //possible mode are app, ate, in, out,binary, trunc
-  string fCurrentWork;
-	fstream fPedFile;
-	fstream fMipsFile;
-	map<int,valueset> ParMap;
-	//map<int,valueset> MipsMap;
+  map<string,string> fReadList;// first string is arguement type, second is filename
+  map<string,string> fWriteList;
+	map<string,fstream*> outfiles;
+	//fstream fPedFile;
+	//fstream fMipsFile;
+	map<string,map<int,valueset> > ParMap;
 
 public:
   template<typename type1>
   bool AppendData(int position, type1 value,string pkgType=""){
-    if (fCurrentWork == "Ped"||pkgType=="Ped"){ 
+	  if(pkgType==""){
+		  pkgType=outfiles.begin()->first;
+		}
+    if(outfiles.size()>0){
+		  *(outfiles[pkgType])<<position<<"\t"<<value<<std::endl;
+		}
+		else{
+		  DmpLogError<<"nothing to save, you should not use this function.:-("<<DmpLogEndl;
+		}
+		/*
+		if (fCurrentWrite == "Ped"||pkgType=="Ped"){ 
 	    fPedFile<<position<<"\t"<<value<<std::endl;
 	  }
-	  else if (fCurrentWork == "Mips"||pkgType=="Mips"){
+	  else if (fCurrentWrite == "Mips"||pkgType=="Mips"){
 	    fMipsFile<<position<<"\t"<<value<<std::endl;
 	  } 
-	  else{ 
+	  else{
 	    DmpLogError<<"I don't know where to save the data."<<DmpLogEndl;
 		  return false;
-	  } 
+	  }*/ 
     return true;
   } 
   template<typename type1>
   bool AppendData(int position, type1 value1, type1 value2,string pkgType=""){
-    if (fCurrentWork == "Ped"||pkgType=="Ped"){ 
+    if(pkgType==""){
+		  pkgType=outfiles.begin()->first;
+		}
+    if(outfiles.size()>0){
+		  *(outfiles[pkgType])<<position<<"\t"<<value1<<"\t"<<value2<<std::endl;
+		}
+		else{
+		  DmpLogError<<"nothing to save, you should not use this function.:-("<<DmpLogEndl;
+		}
+
+		/*
+		if (fCurrentWrite == "Ped"||pkgType=="Ped"){ 
 	    fPedFile<<position<<"\t"<<value1<<"\t"<<value2<<std::endl;
 	  }
-	  else if (fCurrentWork == "Mips"||pkgType=="Mips"){
+	  else if (fCurrentWrite == "Mips"||pkgType=="Mips"){
 	    fMipsFile<<position<<"\t"<<value1<<"\t"<<value2<<std::endl;
 	  } 
 	  else{ 
 	    DmpLogError<<"I don't know where to save the data."<<DmpLogEndl;
 		  return false;
-	  } 
+	  }*/ 
     return true;
   }
 
 	double GetData(int position,int id=0,string pkgType=""){
     double result=-1;
-		//if(pkgType=="Ped"||fCurrentWork=="Ped"){
-		  return ParMap[position].value.at(id);
-		//}
-		//if(pkgType=="Mips"||fCurrentWork=="Mips"){
-		  //return ParsMap[position].value.at(i);
-		//}
+		if(pkgType==""){
+		  pkgType=ParMap.begin()->first;;
+		}
+		if(ParMap[pkgType].size()>0){
+		  return ParMap[pkgType][position].value.at(id);
+		}
+		else{
+		  DmpLogError<<ParMap.begin()->first<<" is empty."<<DmpLogEndl;
+		}
 
 	  return result;
   } 
 
-  bool LoadPar(fstream &pkg);
+  bool LoadPar(fstream &file, string pkgType="");
+	void ShowPar(string pkgType="");
 
 };
 
